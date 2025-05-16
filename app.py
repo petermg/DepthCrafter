@@ -231,9 +231,10 @@ def infer_depth(
     save_path = os.path.join(save_folder, os.path.splitext(os.path.basename(video))[0])
     logger.debug(f"Save path: {save_path}")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    npz_file = save_path + ".npz"
     if save_npz:
         logger.debug("Saving depth map as .npz")
-        np.savez_compressed(save_path + ".npz", depth=res)
+        np.savez_compressed(npz_file, depth=res)
 
     # Use original frames if resize_to_original is enabled, else use scaled frames
     output_frames = original_frames if resize_to_original else frames
@@ -289,7 +290,7 @@ def infer_depth(
         os.rename(temp_input_path, final_input_path)
         os.rename(temp_depth_path, final_depth_path)
 
-    # Clean up temporary files
+    # Clean up temporary files and .npz file
     for temp_file in [temp_input_path, temp_depth_path]:
         if os.path.exists(temp_file):
             try:
@@ -297,6 +298,12 @@ def infer_depth(
                 logger.debug(f"Removed temporary file: {temp_file}")
             except Exception as e:
                 logger.warning(f"Failed to remove temporary file {temp_file}: {str(e)}")
+    if save_npz and os.path.exists(npz_file):
+        try:
+            os.remove(npz_file)
+            logger.debug(f"Removed .npz file: {npz_file}")
+        except Exception as e:
+            logger.warning(f"Failed to remove .npz file {npz_file}: {str(e)}")
 
     # Log final VRAM usage
     if torch.cuda.is_available():
